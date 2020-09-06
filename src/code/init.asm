@@ -1,0 +1,52 @@
+SECTION "Initialization", ROM0
+;==============================================================
+; Initializes all registers to a playable state after
+; initial startup of the game.
+;==============================================================
+BaseInit::
+    ; Check if running on CGB
+    xor $11
+    ld [CGBFlag], a
+
+    ; Kill sound, clear pending interrupts
+    xor a
+    ld [rNR52], a
+    ld [rIF], a
+
+    ; Wait for VBlank and disable interrupts
+    rst WaitVBlank
+    di
+
+    ; Disable LCD
+    xor a
+    ld [rLCDC], a
+
+    ; Copy OAM DMA routine to HRAM
+    ld hl, OAMDMARoutine
+    ld b, OAMDMARoutine.end - OAMDMARoutine
+    ld c, LOW(OAMDMA)
+.copyOAMDMA
+    ld a, [hli]
+    ldh [c], a
+    inc c
+    dec b
+    jr nz, .copyOAMDMA
+
+    ; Initialize Palettes
+    ld a, %11100100
+    ldh [rBGP], a
+    ldh [rOBP0], a
+    ldh [rOBP1], a
+
+    ; Initialize HRAM Variables
+    xor a
+    ldh [StartAddrOAM], a
+    ldh [PressedButtons], a
+    ldh [HeldButtons], a
+
+    ; Clear OAM Memory and VRAM
+    call ClearOAM
+    ld a, 8
+    call ClearTilemaps
+
+    ret
