@@ -31,5 +31,3 @@ InitGame::
 
     call InitMenu
     jp MenuLoop
-
-    jr @
