@@ -114,7 +114,7 @@ UpdateWinSymbolAnim::
 CheckRestartGame::
     ; Check if Start is pressed
     ld a, [hPressedButtons]
-    bit 3, a
+    bit PADB_START, a
     ret z
 
     ; Wait for VBlank and disable interrupts

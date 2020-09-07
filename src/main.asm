@@ -26,7 +26,7 @@ SECTION "Entry Point", ROM0[$100]
 ; Main entry point jumped to on initial start of the game.
 ;==============================================================
 InitGame::
-    ld sp, $e000
+    ld sp, wStackBottom
     call BaseInit
 
     call InitMenu

@@ -393,7 +393,7 @@ CheckForWin::
 CheckAPress::
     ; Check for input
     ld hl, hPressedButtons
-    bit 0, [hl]
+    bit PADB_A, [hl]
     ret z
 
     ; Calculate RAM address for selected box
@@ -534,18 +534,19 @@ CheckCursorMoveInput::
     ; Handle input
     ld a, [wCursorPos]
     ld b, a
-    bit 7, [hl]          ; Check if Down is pressed
+    bit PADB_DOWN, [hl]
     jr z, .noDown
     add 3
     jr .noUp
 .noDown
-    bit 6, [hl]          ; Check if Up is pressed
+    bit PADB_UP, [hl]
     jr z, .noUp
     sub 3
 .noUp
-    bit 5, [hl]          ; Check if Left is pressed
+    bit PADB_LEFT, [hl]
     jr z, .noLeft
     dec a
+    ; Check for wrapping between rows
     cp 2
     jr nz, @ + 3
     inc a
@@ -554,9 +555,10 @@ CheckCursorMoveInput::
     inc a
     jr .noRight
 .noLeft
-    bit 4, [hl]          ; Check if Right is pressed
+    bit PADB_RIGHT, [hl]
     jr z, .noRight
     inc a
+    ; Check for wrapping between rows
     cp 3
     jr nz, @ + 3
     dec a
@@ -570,18 +572,18 @@ CheckCursorMoveInput::
     ; Move cursor
     ld [wCursorPos], a
     ld d, a
-    ld b, 30
-    ld c, 60
+    ld b, CURSOR_BASE_POS_Y
+    ld c, CURSOR_BASE_POS_X
     and a
     jr z, .endPosCalc
 .posCalcLoop
-    ld a, 24
+    ld a, FIELD_SQUARE_WIDTH
     add c
     ld c, a
-    cp 109
+    cp CURSOR_BASE_POS_X + (2 * FIELD_SQUARE_WIDTH) + 1   ; Check if Cursor X overflows current row of squares
     jr c, .noPosNewline
-    ld c, 60
-    ld a, 24
+    ld c, CURSOR_BASE_POS_X
+    ld a, FIELD_SQUARE_WIDTH
     add b
     ld b, a
 .noPosNewline

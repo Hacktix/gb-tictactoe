@@ -31,6 +31,13 @@ SECTION "Shadow OAM", WRAM0, ALIGN[8]
 wShadowOAM: ds 160
 
 ;==============================================================
+; Stack Space
+;==============================================================
+SECTION "Stack", WRAM0[$E000 - STACK_SIZE]
+    ds STACK_SIZE
+wStackBottom:
+
+;==============================================================
 ; RAM accessible during OAM DMA, for OAM DMA routine as
 ; well as VBlank handler variables.
 ;==============================================================
