@@ -5,7 +5,7 @@ SECTION "Initialization", ROM0
 ;==============================================================
 BaseInit::
     ; Check if running on CGB
-    xor $11
+    xor BOOTUP_A_CGB
     ld [CGBFlag], a
 
     ; Kill sound, clear pending interrupts
@@ -35,7 +35,7 @@ BaseInit::
     jr nz, .copyOAMDMA
 
     ; Initialize Palettes
-    ld a, %11100100
+    ld a, DEFAULT_DMG_PALETTE
     ldh [rBGP], a
     ldh [rOBP0], a
     ldh [rOBP1], a
@@ -48,7 +48,7 @@ BaseInit::
 
     ; Clear OAM Memory and VRAM
     call ClearOAM
-    ld a, 8
+    ld a, GAMEPLAY_TILE_EMPTY
     call ClearTilemaps
 
     ret

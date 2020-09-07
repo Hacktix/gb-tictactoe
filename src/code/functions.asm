@@ -15,7 +15,8 @@ ClearOAM::
     ret
 
 ;==============================================================
-; Sets all values in VRAM tilemap data to zero.
+; Sets all values in VRAM tilemap data to the value in the
+; A register.
 ;==============================================================
 ClearTilemaps::
     ld hl, $9800
