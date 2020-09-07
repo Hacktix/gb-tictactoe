@@ -1,6 +1,6 @@
 ![banner](./img/banner.png)
 
-![GitHub](https://img.shields.io/github/license/Hacktix/gb-tictactoe?style=for-the-badge)![GitHub issues](https://img.shields.io/github/issues/Hacktix/gb-tictactoe?style=for-the-badge)![GitHub last commit](https://img.shields.io/github/last-commit/Hacktix/gb-tictactoe?style=for-the-badge)![GitHub release (latest SemVer including pre-releases)](https://img.shields.io/github/v/release/Hacktix/gb-tictactoe?include_prereleases&style=for-the-badge)![GitHub (Pre-)Release Date](https://img.shields.io/github/release-date-pre/Hacktix/gb-tictactoe?style=for-the-badge)
+![GitHub](https://img.shields.io/github/license/Hacktix/gb-tictactoe?style=for-the-badge)![GitHub last commit](https://img.shields.io/github/last-commit/Hacktix/gb-tictactoe?style=for-the-badge)![GitHub release (latest SemVer including pre-releases)](https://img.shields.io/github/v/release/Hacktix/gb-tictactoe?include_prereleases&style=for-the-badge)![GitHub (Pre-)Release Date](https://img.shields.io/github/release-date-pre/Hacktix/gb-tictactoe?style=for-the-badge)
 
 A small starter project as a first proper Gameboy game written 100% in assembly, released in 2020.
 
