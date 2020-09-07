@@ -3,15 +3,15 @@ SECTION "Common Functions", ROM0
 ; Sets all values in OAM to zero.
 ;==============================================================
 ClearOAM::
-    ld hl, ShadowOAM
+    ld hl, wShadowOAM
     ld b, OAM_COUNT * 4
     xor a
 .clearOAM
     ld [hli], a
     dec b
     jr nz, .clearOAM
-    ld a, HIGH(ShadowOAM)
-    call OAMDMA
+    ld a, HIGH(wShadowOAM)
+    call hOAMDMA
     ret
 
 ;==============================================================

@@ -1,29 +1,29 @@
 SECTION "VBlank Handler", ROM0
 VBlankHandler::
     ; Do OAM DMA if requested
-    ldh a, [StartAddrOAM]
+    ldh a, [hStartAddrOAM]
     and a
     jr z, .noOAMDMA
-    call OAMDMA
+    call hOAMDMA
     xor a
-    ldh [StartAddrOAM], a
+    ldh [hStartAddrOAM], a
 .noOAMDMA
 
     ; Print string if requested
-    ldh a, [StringDrawFlag]
+    ldh a, [hStringDrawFlag]
     and a
     jr z, .noStringDraw
-    ld a, [StringLocationAddr]
+    ld a, [hStringLocationAddr]
     ld h, a
-    ld a, [StringLocationAddr+1]
+    ld a, [hStringLocationAddr+1]
     ld l, a
-    ld a, [StringPointerAddr]
+    ld a, [hStringPointerAddr]
     ld d, a
-    ld a, [StringPointerAddr+1]
+    ld a, [hStringPointerAddr+1]
     ld e, a
     rst CopyString
     xor a
-    ldh [StringDrawFlag], a
+    ldh [hStringDrawFlag], a
 .noStringDraw
 
     ; Fetch inputs
@@ -47,11 +47,11 @@ endr
 	ld b, a
 	ld a, $30
 	ldh [c], a
-	ldh a, [HeldButtons]
+	ldh a, [hHeldButtons]
 	cpl
 	and b
-	ldh [PressedButtons], a
+	ldh [hPressedButtons], a
 	ld a, b
-	ldh [HeldButtons], a
+	ldh [hHeldButtons], a
 
     reti

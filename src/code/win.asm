@@ -20,12 +20,12 @@ WinLoop::
 ;==============================================================
 UpdateWinSymbolAnim::
     ; Check if draw
-    ld a, [PlayerWin]
+    ld a, [wPlayerWin]
     and a
     ret z
 
     ; Check if animation should be updated
-    ld hl, SWinAnimCooldown
+    ld hl, wSWinAnimCooldown
     dec [hl]
     ret nz
 
@@ -34,22 +34,22 @@ UpdateWinSymbolAnim::
 
     ; Update sprite positions
     ld b, 3
-    ld de, WinPositions
+    ld de, wWinPositions
 .spriteUpdateLoop
     ld a, [de]
     inc de
     add a
     add a
     add a
-    add LOW(ShadowOAM+4)
+    add LOW(wShadowOAM+4)
     ld l, a
-    adc HIGH(ShadowOAM+4)
+    adc HIGH(wShadowOAM+4)
     sub l
     ld h, a
-    ld a, [SWinAnimSpeedY]
+    ld a, [wSWinAnimSpeedY]
     add [hl]
     ld [hli], a
-    ld a, [SWinAnimSpeedX]
+    ld a, [wSWinAnimSpeedX]
     add [hl]
     ld [hld], a
     ld a, $04
@@ -58,24 +58,24 @@ UpdateWinSymbolAnim::
     adc h
     sub l
     ld h, a
-    ld a, [SWinAnimSpeedY]
+    ld a, [wSWinAnimSpeedY]
     add [hl]
     ld [hli], a
-    ld a, [SWinAnimSpeedX]
+    ld a, [wSWinAnimSpeedX]
     add [hl]
     ld [hld], a
     dec b
     jr nz, .spriteUpdateLoop
 
     ; Request OAM DMA
-    ld a, HIGH(ShadowOAM)
-    ldh [StartAddrOAM], a
+    ld a, HIGH(wShadowOAM)
+    ldh [hStartAddrOAM], a
 
     ; Update X-Speed Variables
-    ld a, [SWinAnimSpeedX]
-    ld hl, SWinAnimSpeedChangeX
+    ld a, [wSWinAnimSpeedX]
+    ld hl, wSWinAnimSpeedChangeX
     add [hl]
-    ld [SWinAnimSpeedX], a
+    ld [wSWinAnimSpeedX], a
     cp SYM_ANIM_MAX_SPEED + 1
     jr c, .posSpeedX
     cpl 
@@ -89,10 +89,10 @@ UpdateWinSymbolAnim::
 .skipSpeedSwapX
 
     ; Update Y-Speed Variables
-    ld a, [SWinAnimSpeedY]
-    ld hl, SWinAnimSpeedChangeY
+    ld a, [wSWinAnimSpeedY]
+    ld hl, wSWinAnimSpeedChangeY
     add [hl]
-    ld [SWinAnimSpeedY], a
+    ld [wSWinAnimSpeedY], a
     cp SYM_ANIM_MAX_SPEED + 1
     jr c, .posSpeedY
     cpl 
@@ -113,7 +113,7 @@ UpdateWinSymbolAnim::
 ;==============================================================
 CheckRestartGame::
     ; Check if Start is pressed
-    ld a, [PressedButtons]
+    ld a, [hPressedButtons]
     bit 3, a
     ret z
 
@@ -138,36 +138,36 @@ CheckRestartGame::
 ;==============================================================
 UpdateWinAnim::
     ; Check if animation should be updated
-    ld hl, WinAnimCooldown
+    ld hl, wWinAnimCooldown
     dec [hl]
     ret nz
 
     ; Update animation state registers
     ld [hl], WIN_ANIM_TIMEOUT
-    ld a, [WinAnimState]
+    ld a, [wWinAnimState]
     inc a
-    ld [WinAnimState], a
+    ld [wWinAnimState], a
 
     ; Load string pointer to draw
     and $01
     jr nz, .loadTextString
     ld a, HIGH(strEmptyLine)
-    ld [StringPointerAddr], a
+    ld [hStringPointerAddr], a
     ld a, LOW(strEmptyLine)
-    ld [StringPointerAddr+1], a
+    ld [hStringPointerAddr+1], a
     jr .endLoadString
 .loadTextString
     ld a, HIGH(strReset)
-    ld [StringPointerAddr], a
+    ld [hStringPointerAddr], a
     ld a, LOW(strReset)
-    ld [StringPointerAddr+1], a
+    ld [hStringPointerAddr+1], a
 .endLoadString
 
     ; Request string to be drawn
     ld a, $9c
-    ld [StringLocationAddr], a
+    ld [hStringLocationAddr], a
     ld a, $60
-    ld [StringLocationAddr+1], a
-    ld [StringDrawFlag], a
+    ld [hStringLocationAddr+1], a
+    ld [hStringDrawFlag], a
 
     ret

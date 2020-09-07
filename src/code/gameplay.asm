@@ -29,7 +29,7 @@ InitPlayingField::
     rst Memcpy
 
     ; Initialize CGB palettes if necessary
-    ld a, [CGBFlag]
+    ld a, [wCGBFlag]
     and a
     call z, InitGameplayPalettesCGB
 
@@ -47,11 +47,11 @@ InitPlayingField::
 
     ; Initialize cursor animation registers
     ld a, CURSOR_ANIM_TIMEOUT
-    ld [CursorAnimCooldown], a
+    ld [wCursorAnimCooldown], a
     ld a, $ff
-    ld [CursorPosAnimAdd], a
+    ld [wCursorPosAnimAdd], a
     ld a, 1
-    ld [PlayerTurn], a
+    ld [wPlayerTurn], a
 
     ; Set SCX to cheat around de-centered playing field
     ld a, -4
@@ -111,12 +111,12 @@ InitGameplayPalettesCGB::
 ; Initializes positions of sprites for ingame
 ;==============================================================
 InitPlayingFieldSprites::
-    ld hl, ShadowOAM
+    ld hl, wShadowOAM
     ld de, InitGameOAM
     ld bc, EndInitGameOAM - InitGameOAM
     rst Memcpy
-    ld a, HIGH(ShadowOAM)
-    call OAMDMA
+    ld a, HIGH(wShadowOAM)
+    call hOAMDMA
     ret
 
 ;==============================================================
@@ -142,15 +142,15 @@ TriggerWin::
     pop de
 
     ; Check if draw
-    ld a, [PlayerWin]
+    ld a, [wPlayerWin]
     and a
     jr nz, .noDraw
     
     ; Draw 'DRAW!' string
     ld a, HIGH(strDraw)
-    ld [StringPointerAddr], a
+    ld [hStringPointerAddr], a
     ld a, LOW(strDraw)
-    ld [StringPointerAddr+1], a
+    ld [hStringPointerAddr+1], a
     jr .endWinTrigger
 .noDraw
 
@@ -158,61 +158,61 @@ TriggerWin::
     dec a
     jr nz, .winPlayer2
     ld a, HIGH(strWinPlayer1)
-    ld [StringPointerAddr], a
+    ld [hStringPointerAddr], a
     ld a, LOW(strWinPlayer1)
-    ld [StringPointerAddr+1], a
+    ld [hStringPointerAddr+1], a
     jr .endWinTrigger
 .winPlayer2
     ld a, HIGH(strWinPlayer2)
-    ld [StringPointerAddr], a
+    ld [hStringPointerAddr], a
     ld a, LOW(strWinPlayer2)
-    ld [StringPointerAddr+1], a
+    ld [hStringPointerAddr+1], a
 
 .endWinTrigger
     ; Request string to be drawn
     ld a, $9c
-    ld [StringLocationAddr], a
+    ld [hStringLocationAddr], a
     ld a, $20
-    ld [StringLocationAddr+1], a
-    ld [StringDrawFlag], a
+    ld [hStringLocationAddr+1], a
+    ld [hStringDrawFlag], a
 
     ; Set up animation registers
     ld a, WIN_ANIM_TIMEOUT
-    ld [WinAnimCooldown], a
+    ld [wWinAnimCooldown], a
 
     ; Hide cursor sprite
     xor a
-    ld [ShadowOAM+1], a
-    ld a, HIGH(ShadowOAM)
-    ldh [StartAddrOAM], a
+    ld [wShadowOAM+1], a
+    ld a, HIGH(wShadowOAM)
+    ldh [hStartAddrOAM], a
 
     ; Initialize animation variables
     ld a, -1
-    ld [SWinAnimSpeedChangeX], a
+    ld [wSWinAnimSpeedChangeX], a
     ld a, 1
-    ld [SWinAnimSpeedChangeY], a
+    ld [wSWinAnimSpeedChangeY], a
     ld a, SYM_ANIM_MAX_SPEED
-    ld [SWinAnimSpeedX], a
+    ld [wSWinAnimSpeedX], a
     xor a
-    ld [SWinAnimSpeedY], a
+    ld [wSWinAnimSpeedY], a
     ld a, WIN_SYM_ANIM_TIMEOUT
-    ld [SWinAnimCooldown], a
+    ld [wSWinAnimCooldown], a
 
     ; Initialize win sprite positions
-    ld a, [PlayerWin]
+    ld a, [wPlayerWin]
     and a
     jp z, WinLoop
     ld b, 3
-    ld de, WinPositions
+    ld de, wWinPositions
 .spriteUpdateLoop
     ld a, [de]
     inc de
     add a
     add a
     add a
-    add LOW(ShadowOAM+4)
+    add LOW(wShadowOAM+4)
     ld l, a
-    adc HIGH(ShadowOAM+4)
+    adc HIGH(wShadowOAM+4)
     sub l
     ld h, a
     ld a, -SYM_ANIM_OFF_Y
@@ -245,7 +245,7 @@ TriggerWin::
 ;==============================================================
 CheckForWin::
     ; Set registers for checks
-    ld hl, FieldMap
+    ld hl, wFieldMap
     ld bc, $0000
     ld de, $0003
 
@@ -265,11 +265,11 @@ CheckForWin::
     and d
     jr z, .noRowWin
     ; If 3 in a row
-    ld [PlayerWin], a
+    ld [wPlayerWin], a
     ld a, l
     scf
-    sbc LOW(FieldMap)
-    ld hl, WinPositions
+    sbc LOW(wFieldMap)
+    ld hl, wWinPositions
     ld [hli], a
     dec a
     ld [hli], a
@@ -281,7 +281,7 @@ CheckForWin::
     jr nz, .rowLoop
     
     ; Reset registers for checks
-    ld hl, FieldMap
+    ld hl, wFieldMap
     ld bc, $0000
     ld de, $0003
 
@@ -305,11 +305,11 @@ CheckForWin::
     and d
     jr z, .noColWin
     ; If 3 in a column
-    ld [PlayerWin], a
+    ld [wPlayerWin], a
     ld a, l
     scf
-    sbc LOW(FieldMap)
-    ld hl, WinPositions
+    sbc LOW(wFieldMap)
+    ld hl, wWinPositions
     ld [hli], a
     sub 3
     ld [hli], a
@@ -317,7 +317,7 @@ CheckForWin::
     ld [hl], a
     jp TriggerWin
 .noColWin
-    ld hl, FieldMap
+    ld hl, wFieldMap
     ld a, 4
     sub e
     add l
@@ -329,11 +329,11 @@ CheckForWin::
     jr nz, .colLoop
 
     ; Check left-to-right diagonal
-    ld a, [FieldMap+0]
+    ld a, [wFieldMap+0]
     ld b, a
-    ld a, [FieldMap+4]
+    ld a, [wFieldMap+4]
     ld c, a
-    ld a, [FieldMap+8]
+    ld a, [wFieldMap+8]
     ld d, a
     ld a, b
     and a
@@ -342,8 +342,8 @@ CheckForWin::
     jr z, .noWinDiag1
     and d
     jr z, .noWinDiag1
-    ld [PlayerWin], a
-    ld hl, WinPositions
+    ld [wPlayerWin], a
+    ld hl, wWinPositions
     xor a
     ld [hli], a
     ld a, $04
@@ -354,11 +354,11 @@ CheckForWin::
 .noWinDiag1
 
     ; Check right-to-left diagonal
-    ld a, [FieldMap+2]
+    ld a, [wFieldMap+2]
     ld b, a
-    ld a, [FieldMap+4]
+    ld a, [wFieldMap+4]
     ld c, a
-    ld a, [FieldMap+6]
+    ld a, [wFieldMap+6]
     ld d, a
     ld a, b
     and a
@@ -367,8 +367,8 @@ CheckForWin::
     jr z, .noWinDiag2
     and d
     jr z, .noWinDiag2
-    ld [PlayerWin], a
-    ld hl, WinPositions
+    ld [wPlayerWin], a
+    ld hl, wWinPositions
     ld a, $02
     ld [hli], a
     ld a, $04
@@ -379,11 +379,11 @@ CheckForWin::
 .noWinDiag2
 
     ; Check for draw
-    ld a, [PlacedSymbols]
+    ld a, [wPlacedSymbols]
     cp 9
     ret nz
     xor a
-    ld [PlayerWin], a
+    ld [wPlayerWin], a
     jp TriggerWin
 
 ;==============================================================
@@ -392,13 +392,13 @@ CheckForWin::
 ;==============================================================
 CheckAPress::
     ; Check for input
-    ld hl, PressedButtons
+    ld hl, hPressedButtons
     bit 0, [hl]
     ret z
 
     ; Calculate RAM address for selected box
-    ld hl, FieldMap
-    ld a, [CursorPos]
+    ld hl, wFieldMap
+    ld a, [wCursorPos]
     add l
     ld l, a
     adc h
@@ -411,12 +411,12 @@ CheckAPress::
     ret nz
 
     ; Set value in RAM
-    ld a, [PlayerTurn]
+    ld a, [wPlayerTurn]
     ld [hl], a
 
     ; Get OAM pointer
-    ld hl, ShadowOAM + 6      ; Load box 0 tile number pointer
-    ld a, [CursorPos]
+    ld hl, wShadowOAM + 6      ; Load box 0 tile number pointer
+    ld a, [wCursorPos]
     and a
     jr z, .skipBoxSearch
     ld d, a
@@ -432,7 +432,7 @@ CheckAPress::
 .skipBoxSearch
 
     ; Update sprites
-    ld a, [PlayerTurn]
+    ld a, [wPlayerTurn]
     dec a
     add a
     add a
@@ -440,7 +440,7 @@ CheckAPress::
     ld [hli], a
     inc b
     inc b
-    ld a, [PlayerTurn]
+    ld a, [wPlayerTurn]
     ld [hld], a
     ld a, 4
     add l
@@ -450,45 +450,45 @@ CheckAPress::
     ld h, a
     ld a, b
     ld [hli], a
-    ld a, [PlayerTurn]
+    ld a, [wPlayerTurn]
     ld [hl], a
 
     ; Switch player turn
-    ld a, [PlayerTurn]
+    ld a, [wPlayerTurn]
     dec a
     jr nz, .endSwitchPlayer
     ld a, 2
 .endSwitchPlayer
-    ld [PlayerTurn], a
+    ld [wPlayerTurn], a
 
     ; Request window text update
     jr nz, .loadPlayer1
     ld a, HIGH(strTurnPlayer2)
-    ld [StringPointerAddr], a
+    ld [hStringPointerAddr], a
     ld a, LOW(strTurnPlayer2)
-    ld [StringPointerAddr+1], a
+    ld [hStringPointerAddr+1], a
     jr .endTurnStringLoad
 .loadPlayer1
     ld a, HIGH(strTurnPlayer1)
-    ld [StringPointerAddr], a
+    ld [hStringPointerAddr], a
     ld a, LOW(strTurnPlayer1)
-    ld [StringPointerAddr+1], a
+    ld [hStringPointerAddr+1], a
     jr .endTurnStringLoad
 .endTurnStringLoad
     ld a, $9c
-    ld [StringLocationAddr], a
+    ld [hStringLocationAddr], a
     ld a, $20
-    ld [StringLocationAddr+1], a
-    ld [StringDrawFlag], a
+    ld [hStringLocationAddr+1], a
+    ld [hStringDrawFlag], a
 
     ; Increment amount of placed symbols
-    ld a, [PlacedSymbols]
+    ld a, [wPlacedSymbols]
     inc a
-    ld [PlacedSymbols], a
+    ld [wPlacedSymbols], a
 
     ; Request OAM DMA
-    ld a, HIGH(ShadowOAM)
-    ldh [StartAddrOAM], a
+    ld a, HIGH(wShadowOAM)
+    ldh [hStartAddrOAM], a
 
     jp CheckForWin
 
@@ -497,27 +497,27 @@ CheckAPress::
 ; animation state registers.
 ;==============================================================
 UpdateCursorAnim::
-    ld hl, CursorAnimCooldown
+    ld hl, wCursorAnimCooldown
     dec [hl]
     ret nz
 
     ; Animation needs to be updated
     ld [hl], CURSOR_ANIM_TIMEOUT
-    ld a, [CursorPosAnimAdd]
+    ld a, [wCursorPosAnimAdd]
     ld b, a
-    ld a, [ShadowOAM]
+    ld a, [wShadowOAM]
     add b
-    ld [ShadowOAM], a
-    ld a, HIGH(ShadowOAM)
-    ld [StartAddrOAM], a
+    ld [wShadowOAM], a
+    ld a, HIGH(wShadowOAM)
+    ld [hStartAddrOAM], a
     dec b
     jr nz, .reloadOne
     ld a, $ff
-    ld [CursorPosAnimAdd], a
+    ld [wCursorPosAnimAdd], a
     ret
 .reloadOne
     ld a, 1
-    ld [CursorPosAnimAdd], a
+    ld [wCursorPosAnimAdd], a
     ret
 
 ;==============================================================
@@ -526,13 +526,13 @@ UpdateCursorAnim::
 ;==============================================================
 CheckCursorMoveInput::
     ; Check for input
-    ld hl, PressedButtons
+    ld hl, hPressedButtons
     ld a, [hl]
     and a
     ret z
 
     ; Handle input
-    ld a, [CursorPos]
+    ld a, [wCursorPos]
     ld b, a
     bit 7, [hl]          ; Check if Down is pressed
     jr z, .noDown
@@ -568,7 +568,7 @@ CheckCursorMoveInput::
     ret nc
 
     ; Move cursor
-    ld [CursorPos], a
+    ld [wCursorPos], a
     ld d, a
     ld b, 30
     ld c, 60
@@ -588,15 +588,15 @@ CheckCursorMoveInput::
     dec d
     jr nz, .posCalcLoop
 .endPosCalc
-    ld a, [CursorPosAnimAdd]
+    ld a, [wCursorPosAnimAdd]
     dec a
     jr nz, .noAnimOffset
     dec b
 .noAnimOffset
     ld a, b
-    ld [ShadowOAM], a
+    ld [wShadowOAM], a
     ld a, c
-    ld [ShadowOAM+1], a
-    ld a, HIGH(ShadowOAM)
-    ld [StartAddrOAM], a
+    ld [wShadowOAM+1], a
+    ld a, HIGH(wShadowOAM)
+    ld [hStartAddrOAM], a
     ret

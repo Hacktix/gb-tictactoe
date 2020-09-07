@@ -6,7 +6,7 @@ SECTION "Initialization", ROM0
 BaseInit::
     ; Check if running on CGB
     xor BOOTUP_A_CGB
-    ld [CGBFlag], a
+    ld [wCGBFlag], a
 
     ; Kill sound, clear pending interrupts
     xor a
@@ -26,7 +26,7 @@ BaseInit::
     ; Copy OAM DMA routine to HRAM
     ld hl, OAMDMARoutine
     ld b, OAMDMARoutine.end - OAMDMARoutine
-    ld c, LOW(OAMDMA)
+    ld c, LOW(hOAMDMA)
 .copyOAMDMA
     ld a, [hli]
     ldh [c], a
@@ -42,9 +42,9 @@ BaseInit::
 
     ; Initialize HRAM Variables
     xor a
-    ldh [StartAddrOAM], a
-    ldh [PressedButtons], a
-    ldh [HeldButtons], a
+    ldh [hStartAddrOAM], a
+    ldh [hPressedButtons], a
+    ldh [hHeldButtons], a
 
     ; Clear OAM Memory and VRAM
     call ClearOAM

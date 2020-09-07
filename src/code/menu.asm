@@ -26,18 +26,18 @@ InitMenu::
     call ClearOAM
 
     ; Load cursor sprite
-    ld hl, ShadowOAM
+    ld hl, wShadowOAM
     ld a, 120
     ld [hli], a
     ld a, 56
     ld [hli], a
     ld a, 12
     ld [hli], a
-    ld a, HIGH(ShadowOAM)
-    call OAMDMA
+    ld a, HIGH(wShadowOAM)
+    call hOAMDMA
 
     ; Initialize CGB palettes if necessary
-    ld a, [CGBFlag]
+    ld a, [wCGBFlag]
     and a
     jr nz, .noInitCGB
     
@@ -70,7 +70,7 @@ InitMenu::
 .noInitCGB
     ; Initialize menu variables
     xor a
-    ld [SelectedGamemode], a
+    ld [wSelectedGamemode], a
 
     ; Start LCD
     ld a, LCDCF_ON | LCDCF_BG8800 | LCDCF_BG9800 | LCDCF_WINOFF | LCDCF_OBJ8 | LCDCF_OBJON | LCDCF_BGON
@@ -91,12 +91,12 @@ MenuLoop::
     rst WaitVBlank
 
     ; Check if either up/down was pressed
-    ld a, [PressedButtons]
+    ld a, [hPressedButtons]
     and PADF_DOWN | PADF_UP
     jr z, .noCursorMove       ; Skip cursor update code if neither pressed
 
     ; Update selection
-    ld hl, SelectedGamemode
+    ld hl, wSelectedGamemode
     dec [hl]
     jr z, .updateSprite
     inc [hl]
@@ -112,15 +112,15 @@ MenuLoop::
 .updateSprite2Player
     ld a, MENU_2PLAYER_Y
 .endLoadCursorY
-    ld [ShadowOAM], a
+    ld [wShadowOAM], a
 
     ; Request OAM DMA
-    ld a, HIGH(ShadowOAM)
-    ldh [StartAddrOAM], a
+    ld a, HIGH(wShadowOAM)
+    ldh [hStartAddrOAM], a
 
 .noCursorMove
     ; Check if START was pressed
-    ld a, [PressedButtons]
+    ld a, [hPressedButtons]
     and PADF_START
     jr z, MenuLoop            ; Loop back to MenuLoop label if not pressed
     
