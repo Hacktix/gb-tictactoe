@@ -39,28 +39,8 @@ InitMenu::
     ; Initialize CGB palettes if necessary
     ld a, [CGBFlag]
     and a
-    call z, InitMenuPalettesCGB
-
-    ; Initialize variables
-    xor a
-    ld [SelectedGamemode], a
-
-    ; Start LCD
-    ld a, LCDCF_ON | LCDCF_BG8800 | LCDCF_BG9800 | LCDCF_WINOFF | LCDCF_OBJ8 | LCDCF_OBJON | LCDCF_BGON
-    ld [rLCDC], a
-
-    ; Enable Interrupts
-    xor a
-    ld [rIF], a
-    ei
-
-    ret 
-
-;==============================================================
-; Initializes color palettes for actual gameplay for when
-; running on the Gameboy Color.
-;==============================================================
-InitMenuPalettesCGB::
+    jr nz, .noInitCGB
+    
     ; Setup BGP palette writing
     ld a, $80
     ldh [rBCPS], a
@@ -87,7 +67,21 @@ InitMenuPalettesCGB::
     dec b
     jr nz, .objLoop
 
-    ret
+.noInitCGB
+    ; Initialize menu variables
+    xor a
+    ld [SelectedGamemode], a
+
+    ; Start LCD
+    ld a, LCDCF_ON | LCDCF_BG8800 | LCDCF_BG9800 | LCDCF_WINOFF | LCDCF_OBJ8 | LCDCF_OBJON | LCDCF_BGON
+    ld [rLCDC], a
+
+    ; Enable Interrupts
+    xor a
+    ld [rIF], a
+    ei
+
+    ret 
 
 ;==============================================================
 ; Main loop for displaying the main menu screen.
@@ -96,42 +90,10 @@ MenuLoop::
     ; Make sure that VBlank handler ran first
     rst WaitVBlank
 
-    ; Run all main loop functions
-    call CheckMenuCursorMove
-    call CheckStartGame
-
-    ; Repeat
-    jr MenuLoop
-
-;==============================================================
-; Checks if A was pressed and starts the game in the selected
-; gamemode if so.
-;==============================================================
-CheckStartGame::
-    ; Check if either A/START was pressed
-    ld a, [PressedButtons]
-    and %00001000
-    ret z
-
-    ; Pop return vector off stack
-    pop de
-    
-    ; Disable LCD
-    xor a
-    ld [rLCDC], a
-
-    ; Initialize main gameplay loop
-    call InitPlayingField
-    jp GameplayLoop
-
-;==============================================================
-; Checks if the cursor on the menu screen should be moved.
-;==============================================================
-CheckMenuCursorMove::
     ; Check if either up/down was pressed
     ld a, [PressedButtons]
     and %11000000
-    ret z
+    jr z, .noCursorMove
 
     ; Update selection
     ld hl, SelectedGamemode
@@ -156,4 +118,16 @@ CheckMenuCursorMove::
     ld a, HIGH(ShadowOAM)
     ldh [StartAddrOAM], a
 
-    ret
+.noCursorMove
+    ; Check if either A/START was pressed
+    ld a, [PressedButtons]
+    and %00001000
+    jr z, MenuLoop
+    
+    ; Disable LCD
+    xor a
+    ld [rLCDC], a
+
+    ; Initialize main gameplay loop
+    call InitPlayingField
+    jp GameplayLoop
