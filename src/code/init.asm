@@ -13,9 +13,11 @@ BaseInit::
     ld [rNR52], a
     ld [rIF], a
 
-    ; Wait for VBlank and disable interrupts
-    rst WaitVBlank
-    di
+    ; Wait for VBlank
+.waitVBlank
+	ldh a, [rLY]
+	cp SCRN_Y
+	jr c, .waitVBlank
 
     ; Disable LCD
     xor a

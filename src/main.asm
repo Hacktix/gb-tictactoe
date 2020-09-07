@@ -18,7 +18,7 @@ INCLUDE "src/code/menu.asm"
 ;=========================================================================================================================================================================
 
 SECTION "Entry Point", ROM0[$100]
-    nop
+    di             ; Disabling interrupts explicitly for emulators that have them enabled by default
     jp InitGame
     ds $150 - @
 
