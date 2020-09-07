@@ -1,3 +1,8 @@
+; Menu Symbol Definitions
+MENU_1PLAYER_Y       EQU 120
+MENU_2PLAYER_Y       EQU 136
+
+; Main Gameplay Symbol Definitions
 CURSOR_ANIM_TIMEOUT  EQU 40
 WIN_ANIM_TIMEOUT     EQU 100
 WIN_SYM_ANIM_TIMEOUT EQU 3

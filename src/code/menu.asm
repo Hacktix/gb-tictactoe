@@ -50,7 +50,7 @@ InitMenu::
     ; Write color values
 .bgp0Loop
     ld a, [hli]
-    ld [rBCPD], a
+    ldh [rBCPD], a
     dec b
     jr nz, .bgp0Loop
 
@@ -63,7 +63,7 @@ InitMenu::
     ; Write color values
 .objLoop
     ld a, [hli]
-    ld [rOCPD], a
+    ldh [rOCPD], a
     dec b
     jr nz, .objLoop
 
@@ -92,8 +92,8 @@ MenuLoop::
 
     ; Check if either up/down was pressed
     ld a, [PressedButtons]
-    and %11000000
-    jr z, .noCursorMove
+    and PADF_DOWN | PADF_UP
+    jr z, .noCursorMove       ; Skip cursor update code if neither pressed
 
     ; Update selection
     ld hl, SelectedGamemode
@@ -107,10 +107,10 @@ MenuLoop::
     ld a, [hl]
     and a
     jr nz, .updateSprite2Player
-    ld a, 120
+    ld a, MENU_1PLAYER_Y
     jr .endLoadCursorY
 .updateSprite2Player
-    ld a, 136
+    ld a, MENU_2PLAYER_Y
 .endLoadCursorY
     ld [ShadowOAM], a
 
@@ -119,10 +119,10 @@ MenuLoop::
     ldh [StartAddrOAM], a
 
 .noCursorMove
-    ; Check if either A/START was pressed
+    ; Check if START was pressed
     ld a, [PressedButtons]
-    and %00001000
-    jr z, MenuLoop
+    and PADF_START
+    jr z, MenuLoop            ; Loop back to MenuLoop label if not pressed
     
     ; Disable LCD
     xor a
