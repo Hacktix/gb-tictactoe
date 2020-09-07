@@ -8,7 +8,7 @@ RGBFIX = rgbfix
 RM_F = rm -f
 
 ASFLAGS = -h
-LDFLAGS = -t
+LDFLAGS = -t -w
 FIXFLAGS = -v -p $(PADVAL) -t $(NAME) -c
 
 tictactoe.gb: tictactoe.o
