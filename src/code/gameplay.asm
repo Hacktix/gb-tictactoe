@@ -31,10 +31,42 @@ InitPlayingField::
     ; Initialize CGB palettes if necessary
     ld a, [wCGBFlag]
     and a
-    call z, InitGameplayPalettesCGB
+    jr nz, .noInitCGB
+    
+    ; Setup BGP palette writing
+    ld a, $80
+    ldh [rBCPS], a
+    ld hl, cGameplayBGP0
+    ld b, 8
 
+    ; Write color values
+.bgp0Loop
+    ld a, [hli]
+    ld [rBCPD], a
+    dec b
+    jr nz, .bgp0Loop
+
+    ; Setup OBJ palette writing
+    ld a, $80
+    ldh [rOCPS], a
+    ld hl, cGameplayOBJ0
+    ld b, EndGameplayObjectPalettes - cGameplayOBJ0
+
+    ; Write color values
+.objLoop
+    ld a, [hli]
+    ld [rOCPD], a
+    dec b
+    jr nz, .objLoop
+
+.noInitCGB
     ; Init sprite positions
-    call InitPlayingFieldSprites
+    ld hl, wShadowOAM
+    ld de, InitGameOAM
+    ld bc, EndInitGameOAM - InitGameOAM
+    rst Memcpy
+    ld a, HIGH(wShadowOAM)
+    call hOAMDMA
 
     ; Init game variables
     ld hl, StartPlayRAM
@@ -75,173 +107,234 @@ InitPlayingField::
     ret
 
 ;==============================================================
-; Initializes color palettes for actual gameplay for when
-; running on the Gameboy Color.
-;==============================================================
-InitGameplayPalettesCGB::
-    ; Setup BGP palette writing
-    ld a, $80
-    ldh [rBCPS], a
-    ld hl, cGameplayBGP0
-    ld b, 8
-
-    ; Write color values
-.bgp0Loop
-    ld a, [hli]
-    ld [rBCPD], a
-    dec b
-    jr nz, .bgp0Loop
-
-    ; Setup OBJ palette writing
-    ld a, $80
-    ldh [rOCPS], a
-    ld hl, cGameplayOBJ0
-    ld b, EndGameplayObjectPalettes - cGameplayOBJ0
-
-    ; Write color values
-.objLoop
-    ld a, [hli]
-    ld [rOCPD], a
-    dec b
-    jr nz, .objLoop
-
-    ret
-
-;==============================================================
-; Initializes positions of sprites for ingame
-;==============================================================
-InitPlayingFieldSprites::
-    ld hl, wShadowOAM
-    ld de, InitGameOAM
-    ld bc, EndInitGameOAM - InitGameOAM
-    rst Memcpy
-    ld a, HIGH(wShadowOAM)
-    call hOAMDMA
-    ret
-
-;==============================================================
 ; Main loop for actual gameplay
 ;==============================================================
 GameplayLoop::
     ; Make sure that VBlank handler ran first
     rst WaitVBlank
 
-    ; Run all main loop functions
-    call CheckCursorMoveInput
-    call UpdateCursorAnim
-    call CheckAPress
+    ; Check for DPad input
+    ld hl, hPressedButtons
+    ld a, [hl]
+    and PADF_UP | PADF_DOWN | PADF_LEFT | PADF_RIGHT
+    jr z, .noCursorMove
+
+    ; Handle DPad input
+    ld a, [wCursorPos]
+    ld b, a
+    bit PADB_DOWN, [hl]
+    jr z, .noDown
+    add 3
+    jr .noUp
+.noDown
+    bit PADB_UP, [hl]
+    jr z, .noUp
+    sub 3
+.noUp
+    bit PADB_LEFT, [hl]
+    jr z, .noLeft
+    dec a
+    ; Check for wrapping between rows
+    cp 2
+    jr nz, @ + 3
+    inc a
+    cp 5
+    jr nz, @ + 3
+    inc a
+    jr .noRight
+.noLeft
+    bit PADB_RIGHT, [hl]
+    jr z, .noRight
+    inc a
+    ; Check for wrapping between rows
+    cp 3
+    jr nz, @ + 3
+    dec a
+    cp 6
+    jr nz, @ + 3
+    dec a
+.noRight
+    cp 9                 ; If new cursor pos > 8 : invalid
+    jr nc, .noCursorMove
+
+    ; Move cursor
+    ld [wCursorPos], a
+    ld d, a
+    ld b, CURSOR_BASE_POS_Y
+    ld c, CURSOR_BASE_POS_X
+    and a
+    jr z, .endPosCalc
+.posCalcLoop
+    ld a, FIELD_SQUARE_WIDTH
+    add c
+    ld c, a
+    cp CURSOR_BASE_POS_X + (2 * FIELD_SQUARE_WIDTH) + 1   ; Check if Cursor X overflows current row of squares
+    jr c, .noPosNewline
+    ld c, CURSOR_BASE_POS_X
+    ld a, FIELD_SQUARE_WIDTH
+    add b
+    ld b, a
+.noPosNewline
+    dec d
+    jr nz, .posCalcLoop
+.endPosCalc
+    ld a, [wCursorPosAnimAdd]
+    dec a
+    jr nz, .noAnimOffset
+    dec b
+.noAnimOffset
+    ld a, b
+    ld [wShadowOAM], a
+    ld a, c
+    ld [wShadowOAM+1], a
+    ld a, HIGH(wShadowOAM)
+    ld [hStartAddrOAM], a
+
+.noCursorMove
+    ; Check if cursor animation needs to be updated
+    ld hl, wCursorAnimCooldown
+    dec [hl]
+    jr nz, .noCursorAnimUpdate
+
+    ; Update cursor animation
+    ld [hl], CURSOR_ANIM_TIMEOUT
+    ld a, [wCursorPosAnimAdd]
+    ld b, a
+    ld a, [wShadowOAM]
+    add b
+    ld [wShadowOAM], a
+    ld a, HIGH(wShadowOAM)
+    ld [hStartAddrOAM], a
+    dec b
+    jr nz, .reloadOne
+    ld a, $ff
+    ld [wCursorPosAnimAdd], a
+    jr .noCursorAnimUpdate
+.reloadOne
+    ld a, 1
+    ld [wCursorPosAnimAdd], a
+
+.noCursorAnimUpdate
+    ; Check if A button was pressed
+    ld hl, hPressedButtons
+    bit PADB_A, [hl]
+    jr z, .noPressA
+
+    ; Place symbol and check for win
+    call PlaceSymbol
+    and a
+    jp z, WinLoop
+.noPressA
 
     ; Repeat
     jp GameplayLoop
 
 ;==============================================================
-; Initializes registers for the WinLoop subroutine.
+; Places the symbol of the player whose turn it is in the
+; selected box and checks if the move caused a win.
+; If so, A=0, otherwise A=1.
 ;==============================================================
-TriggerWin::
-    ; Pop off GameplayLoop return vector
-    pop de
+PlaceSymbol::
+    ; Calculate RAM address for selected box
+    ld hl, wFieldMap
+    ld a, [wCursorPos]
+    add l
+    ld l, a
+    adc h
+    sub l
+    ld h, a
 
-    ; Check if draw
-    ld a, [wPlayerWin]
+    ; Check if already set
+    ld a, [hl]
     and a
-    jr nz, .noDraw
-    
-    ; Draw 'DRAW!' string
-    ld a, HIGH(strDraw)
-    ld [hStringPointerAddr], a
-    ld a, LOW(strDraw)
-    ld [hStringPointerAddr+1], a
-    jr .endWinTrigger
-.noDraw
+    ld a, 1
+    ret nz
 
-    ; Load 'PLAYER X WINS!' string
+    ; Set value in RAM
+    ld a, [wPlayerTurn]
+    ld [hl], a
+
+    ; Get OAM pointer
+    ld hl, wShadowOAM + 6      ; Load box 0 tile number pointer
+    ld a, [wCursorPos]
+    and a
+    jr z, .skipBoxSearch
+    ld d, a
+.boxSearchLoop
+    ld a, 8
+    add l
+    ld l, a
+    adc h
+    sub l
+    ld h, a
+    dec d
+    jr nz, .boxSearchLoop
+.skipBoxSearch
+
+    ; Update sprites
+    ld a, [wPlayerTurn]
     dec a
-    jr nz, .winPlayer2
-    ld a, HIGH(strWinPlayer1)
-    ld [hStringPointerAddr], a
-    ld a, LOW(strWinPlayer1)
-    ld [hStringPointerAddr+1], a
-    jr .endWinTrigger
-.winPlayer2
-    ld a, HIGH(strWinPlayer2)
-    ld [hStringPointerAddr], a
-    ld a, LOW(strWinPlayer2)
-    ld [hStringPointerAddr+1], a
+    add a
+    add a
+    ld b, a
+    ld [hli], a
+    inc b
+    inc b
+    ld a, [wPlayerTurn]
+    ld [hld], a
+    ld a, 4
+    add l
+    ld l, a
+    adc h
+    sub l
+    ld h, a
+    ld a, b
+    ld [hli], a
+    ld a, [wPlayerTurn]
+    ld [hl], a
 
-.endWinTrigger
-    ; Request string to be drawn
+    ; Switch player turn
+    ld a, [wPlayerTurn]
+    dec a
+    jr nz, .endSwitchPlayer
+    ld a, 2
+.endSwitchPlayer
+    ld [wPlayerTurn], a
+
+    ; Request window text update
+    jr nz, .loadPlayer1
+    ld a, HIGH(strTurnPlayer2)
+    ld [hStringPointerAddr], a
+    ld a, LOW(strTurnPlayer2)
+    ld [hStringPointerAddr+1], a
+    jr .endTurnStringLoad
+.loadPlayer1
+    ld a, HIGH(strTurnPlayer1)
+    ld [hStringPointerAddr], a
+    ld a, LOW(strTurnPlayer1)
+    ld [hStringPointerAddr+1], a
+    jr .endTurnStringLoad
+.endTurnStringLoad
     ld a, $9c
     ld [hStringLocationAddr], a
     ld a, $20
     ld [hStringLocationAddr+1], a
     ld [hStringDrawFlag], a
 
-    ; Set up animation registers
-    ld a, WIN_ANIM_TIMEOUT
-    ld [wWinAnimCooldown], a
+    ; Increment amount of placed symbols
+    ld a, [wPlacedSymbols]
+    inc a
+    ld [wPlacedSymbols], a
 
-    ; Hide cursor sprite
-    xor a
-    ld [wShadowOAM+1], a
+    ; Request OAM DMA
     ld a, HIGH(wShadowOAM)
     ldh [hStartAddrOAM], a
 
-    ; Initialize animation variables
-    ld a, -1
-    ld [wSWinAnimSpeedChangeX], a
-    ld a, 1
-    ld [wSWinAnimSpeedChangeY], a
-    ld a, SYM_ANIM_MAX_SPEED
-    ld [wSWinAnimSpeedX], a
-    xor a
-    ld [wSWinAnimSpeedY], a
-    ld a, WIN_SYM_ANIM_TIMEOUT
-    ld [wSWinAnimCooldown], a
-
-    ; Initialize win sprite positions
-    ld a, [wPlayerWin]
-    and a
-    jp z, WinLoop
-    ld b, 3
-    ld de, wWinPositions
-.spriteUpdateLoop
-    ld a, [de]
-    inc de
-    add a
-    add a
-    add a
-    add LOW(wShadowOAM+4)
-    ld l, a
-    adc HIGH(wShadowOAM+4)
-    sub l
-    ld h, a
-    ld a, -SYM_ANIM_OFF_Y
-    add [hl]
-    ld [hli], a
-    ld a, -SYM_ANIM_OFF_X
-    add [hl]
-    ld [hld], a
-    ld a, $04
-    add l
-    ld l, a
-    adc h
-    sub l
-    ld h, a
-    ld a, -SYM_ANIM_OFF_Y
-    add [hl]
-    ld [hli], a
-    ld a, -SYM_ANIM_OFF_X
-    add [hl]
-    ld [hl], a
-    dec b
-    jr nz, .spriteUpdateLoop
-
-    ; Jump to win animation loop
-    jp WinLoop
+    jp CheckForWin
 
 ;==============================================================
 ; Checks if there are three of the same symbol in a row and
-; triggers the win animation if there are
+; triggers the win animation if there are.
 ;==============================================================
 CheckForWin::
     ; Set registers for checks
@@ -381,224 +474,112 @@ CheckForWin::
     ; Check for draw
     ld a, [wPlacedSymbols]
     cp 9
+    ld a, 1                  ; Load 1 into A if no win conditions are met
     ret nz
-    xor a
+    xor a                    ; Load 0 into A for Draw (No player won)
     ld [wPlayerWin], a
     jp TriggerWin
 
 ;==============================================================
-; Detects an A button press and places the symbol of the
-; player whose turn it is in the selected box.
+; Initializes registers for the WinLoop subroutine. Sets
+; A to 0 so the main loop knows to jump to WinLoop.
 ;==============================================================
-CheckAPress::
-    ; Check for input
-    ld hl, hPressedButtons
-    bit PADB_A, [hl]
-    ret z
-
-    ; Calculate RAM address for selected box
-    ld hl, wFieldMap
-    ld a, [wCursorPos]
-    add l
-    ld l, a
-    adc h
-    sub l
-    ld h, a
-
-    ; Check if already set
-    ld a, [hl]
+TriggerWin::
+    ; Check if draw
+    ld a, [wPlayerWin]
     and a
-    ret nz
-
-    ; Set value in RAM
-    ld a, [wPlayerTurn]
-    ld [hl], a
-
-    ; Get OAM pointer
-    ld hl, wShadowOAM + 6      ; Load box 0 tile number pointer
-    ld a, [wCursorPos]
-    and a
-    jr z, .skipBoxSearch
-    ld d, a
-.boxSearchLoop
-    ld a, 8
-    add l
-    ld l, a
-    adc h
-    sub l
-    ld h, a
-    dec d
-    jr nz, .boxSearchLoop
-.skipBoxSearch
-
-    ; Update sprites
-    ld a, [wPlayerTurn]
-    dec a
-    add a
-    add a
-    ld b, a
-    ld [hli], a
-    inc b
-    inc b
-    ld a, [wPlayerTurn]
-    ld [hld], a
-    ld a, 4
-    add l
-    ld l, a
-    adc h
-    sub l
-    ld h, a
-    ld a, b
-    ld [hli], a
-    ld a, [wPlayerTurn]
-    ld [hl], a
-
-    ; Switch player turn
-    ld a, [wPlayerTurn]
-    dec a
-    jr nz, .endSwitchPlayer
-    ld a, 2
-.endSwitchPlayer
-    ld [wPlayerTurn], a
-
-    ; Request window text update
-    jr nz, .loadPlayer1
-    ld a, HIGH(strTurnPlayer2)
+    jr nz, .noDraw
+    
+    ; Draw 'DRAW!' string
+    ld a, HIGH(strDraw)
     ld [hStringPointerAddr], a
-    ld a, LOW(strTurnPlayer2)
+    ld a, LOW(strDraw)
     ld [hStringPointerAddr+1], a
-    jr .endTurnStringLoad
-.loadPlayer1
-    ld a, HIGH(strTurnPlayer1)
+    jr .endWinTrigger
+.noDraw
+
+    ; Load 'PLAYER X WINS!' string
+    dec a
+    jr nz, .winPlayer2
+    ld a, HIGH(strWinPlayer1)
     ld [hStringPointerAddr], a
-    ld a, LOW(strTurnPlayer1)
+    ld a, LOW(strWinPlayer1)
     ld [hStringPointerAddr+1], a
-    jr .endTurnStringLoad
-.endTurnStringLoad
+    jr .endWinTrigger
+.winPlayer2
+    ld a, HIGH(strWinPlayer2)
+    ld [hStringPointerAddr], a
+    ld a, LOW(strWinPlayer2)
+    ld [hStringPointerAddr+1], a
+
+.endWinTrigger
+    ; Request string to be drawn
     ld a, $9c
     ld [hStringLocationAddr], a
     ld a, $20
     ld [hStringLocationAddr+1], a
     ld [hStringDrawFlag], a
 
-    ; Increment amount of placed symbols
-    ld a, [wPlacedSymbols]
-    inc a
-    ld [wPlacedSymbols], a
+    ; Set up animation registers
+    ld a, WIN_ANIM_TIMEOUT
+    ld [wWinAnimCooldown], a
 
-    ; Request OAM DMA
+    ; Hide cursor sprite
+    xor a
+    ld [wShadowOAM+1], a
     ld a, HIGH(wShadowOAM)
     ldh [hStartAddrOAM], a
 
-    jp CheckForWin
-
-;==============================================================
-; Updates the position of the cursor accoding to the
-; animation state registers.
-;==============================================================
-UpdateCursorAnim::
-    ld hl, wCursorAnimCooldown
-    dec [hl]
-    ret nz
-
-    ; Animation needs to be updated
-    ld [hl], CURSOR_ANIM_TIMEOUT
-    ld a, [wCursorPosAnimAdd]
-    ld b, a
-    ld a, [wShadowOAM]
-    add b
-    ld [wShadowOAM], a
-    ld a, HIGH(wShadowOAM)
-    ld [hStartAddrOAM], a
-    dec b
-    jr nz, .reloadOne
-    ld a, $ff
-    ld [wCursorPosAnimAdd], a
-    ret
-.reloadOne
+    ; Initialize animation variables
+    ld a, -1
+    ld [wSWinAnimSpeedChangeX], a
     ld a, 1
-    ld [wCursorPosAnimAdd], a
-    ret
+    ld [wSWinAnimSpeedChangeY], a
+    ld a, SYM_ANIM_MAX_SPEED
+    ld [wSWinAnimSpeedX], a
+    xor a
+    ld [wSWinAnimSpeedY], a
+    ld a, WIN_SYM_ANIM_TIMEOUT
+    ld [wSWinAnimCooldown], a
 
-;==============================================================
-; Checks if any D-Pad buttons were pressed and adjusts
-; cursor position accordingly.
-;==============================================================
-CheckCursorMoveInput::
-    ; Check for input
-    ld hl, hPressedButtons
-    ld a, [hl]
+    ; Initialize win sprite positions
+    ld a, [wPlayerWin]
     and a
-    ret z
-
-    ; Handle input
-    ld a, [wCursorPos]
-    ld b, a
-    bit PADB_DOWN, [hl]
-    jr z, .noDown
-    add 3
-    jr .noUp
-.noDown
-    bit PADB_UP, [hl]
-    jr z, .noUp
-    sub 3
-.noUp
-    bit PADB_LEFT, [hl]
-    jr z, .noLeft
-    dec a
-    ; Check for wrapping between rows
-    cp 2
-    jr nz, @ + 3
-    inc a
-    cp 5
-    jr nz, @ + 3
-    inc a
-    jr .noRight
-.noLeft
-    bit PADB_RIGHT, [hl]
-    jr z, .noRight
-    inc a
-    ; Check for wrapping between rows
-    cp 3
-    jr nz, @ + 3
-    dec a
-    cp 6
-    jr nz, @ + 3
-    dec a
-.noRight
-    cp 9                 ; If new cursor pos > 8 : invalid
-    ret nc
-
-    ; Move cursor
-    ld [wCursorPos], a
-    ld d, a
-    ld b, CURSOR_BASE_POS_Y
-    ld c, CURSOR_BASE_POS_X
-    and a
-    jr z, .endPosCalc
-.posCalcLoop
-    ld a, FIELD_SQUARE_WIDTH
-    add c
-    ld c, a
-    cp CURSOR_BASE_POS_X + (2 * FIELD_SQUARE_WIDTH) + 1   ; Check if Cursor X overflows current row of squares
-    jr c, .noPosNewline
-    ld c, CURSOR_BASE_POS_X
-    ld a, FIELD_SQUARE_WIDTH
-    add b
-    ld b, a
-.noPosNewline
-    dec d
-    jr nz, .posCalcLoop
-.endPosCalc
-    ld a, [wCursorPosAnimAdd]
-    dec a
-    jr nz, .noAnimOffset
+    jp z, WinLoop
+    ld b, 3
+    ld de, wWinPositions
+.spriteUpdateLoop
+    ld a, [de]
+    inc de
+    add a
+    add a
+    add a
+    add LOW(wShadowOAM+4)
+    ld l, a
+    adc HIGH(wShadowOAM+4)
+    sub l
+    ld h, a
+    ld a, -SYM_ANIM_OFF_Y
+    add [hl]
+    ld [hli], a
+    ld a, -SYM_ANIM_OFF_X
+    add [hl]
+    ld [hld], a
+    ld a, $04
+    add l
+    ld l, a
+    adc h
+    sub l
+    ld h, a
+    ld a, -SYM_ANIM_OFF_Y
+    add [hl]
+    ld [hli], a
+    ld a, -SYM_ANIM_OFF_X
+    add [hl]
+    ld [hl], a
     dec b
-.noAnimOffset
-    ld a, b
-    ld [wShadowOAM], a
-    ld a, c
-    ld [wShadowOAM+1], a
-    ld a, HIGH(wShadowOAM)
-    ld [hStartAddrOAM], a
+    jr nz, .spriteUpdateLoop
+
+    ; Set A to 0 and return to main loop
+    xor a
     ret
