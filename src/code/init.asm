@@ -50,4 +50,10 @@ BaseInit::
     ld a, GAMEPLAY_TILE_EMPTY
     call ClearTilemaps
 
+    ; Initialize sound
+    ld a, $ff
+    ld [rNR50], a
+    ld [rNR51], a
+    ld [rNR52], a
+
     ret
