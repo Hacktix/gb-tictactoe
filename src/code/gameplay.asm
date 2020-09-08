@@ -190,6 +190,10 @@ GameplayLoop::
     ld a, HIGH(wShadowOAM)
     ld [hStartAddrOAM], a
 
+    ; Play sound
+    ld de, GameMoveBeep
+    call PlaySound
+
 .noCursorMove
     ; Check if cursor animation needs to be updated
     ld hl, wCursorAnimCooldown
@@ -329,6 +333,10 @@ PlaceSymbol::
     ; Request OAM DMA
     ld a, HIGH(wShadowOAM)
     ldh [hStartAddrOAM], a
+
+    ; Play sound
+    ld de, SymbolPlaceBeep
+    call PlaySound
 
     jp CheckForWin
 
@@ -498,7 +506,12 @@ TriggerWin::
     jr .endWinTrigger
 .noDraw
 
+    ; Play sound
+    ld de, WinBeep
+    call PlaySound
+
     ; Load 'PLAYER X WINS!' string
+    ld a, [wPlayerWin]
     dec a
     jr nz, .winPlayer2
     ld a, HIGH(strWinPlayer1)

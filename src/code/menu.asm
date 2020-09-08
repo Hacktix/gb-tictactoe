@@ -118,11 +118,19 @@ MenuLoop::
     ld a, HIGH(wShadowOAM)
     ldh [hStartAddrOAM], a
 
+    ; Play sound
+    ld de, MenuMoveBeep
+    call PlaySound
+
 .noCursorMove
     ; Check if START was pressed
     ld a, [hPressedButtons]
     and PADF_START
     jr z, MenuLoop            ; Loop back to MenuLoop label if not pressed
+
+    ; Play sound
+    ld de, MenuConfirmBeep
+    call PlaySound
     
     ; Disable LCD
     xor a

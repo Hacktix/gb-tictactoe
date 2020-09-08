@@ -80,6 +80,18 @@ cMenuBGP0:
     db $80, $01
 
 ;==============================================================
+; Section containing sound register values for SFX.
+;==============================================================
+SECTION "Sounds", ROM0
+;                             Square Channel 1 - Register Values
+;                    -PPPNSSS   DDLLLLLL   VVVVAPPP   FFFFFFFF   TL---FFF
+MenuMoveBeep:    db %00010111, %10000000, %11000001, %00000000, %10000111
+MenuConfirmBeep: db %00110111, %10000000, %11110001, %00000000, %10000111
+GameMoveBeep:    db %00000000, %10000000, %11000001, %00000000, %10000111
+SymbolPlaceBeep: db %01110100, %10000000, %11000001, %00000000, %10000111
+WinBeep:         db %01110111, %10000000, %11110011, %00000000, %10000111
+
+;==============================================================
 ; Hardcoded Shadow OAM for beginning of gameplay
 ;==============================================================
 SECTION "Initial OAM", ROM0

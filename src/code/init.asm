@@ -8,9 +8,8 @@ BaseInit::
     xor BOOTUP_A_CGB
     ld [wCGBFlag], a
 
-    ; Kill sound, clear pending interrupts
+    ; Clear pending interrupts
     xor a
-    ld [rNR52], a
     ld [rIF], a
 
     ; Wait for VBlank

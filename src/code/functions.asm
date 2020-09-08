@@ -30,3 +30,19 @@ ClearTilemaps::
     or c
     jr nz, .clearTilemaps
     ret
+
+;==============================================================
+; Plays a sound defined by the data bytes DE points to.
+;==============================================================
+PlaySound::
+    ; Load sound data into registers
+    ld hl, rNR10
+    ld b, 5
+.soundLoadLoop
+    ld a, [de]
+    ld [hli], a
+    inc de
+    dec b
+    jr nz, .soundLoadLoop
+
+    ret
