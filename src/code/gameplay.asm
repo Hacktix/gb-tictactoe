@@ -113,6 +113,10 @@ GameplayLoop::
     ; Make sure that VBlank handler ran first
     rst WaitVBlank
 
+    ; ---------------------------------------------------------
+    ; Check DPad input and move cursor accordingly
+    ; ---------------------------------------------------------
+
     ; Check for DPad input
     ld hl, hPressedButtons
     ld a, [hl]
@@ -193,8 +197,12 @@ GameplayLoop::
     ; Play sound
     ld de, GameMoveBeep
     call PlaySound
-
 .noCursorMove
+
+    ; ---------------------------------------------------------
+    ; Update cursor animation
+    ; ---------------------------------------------------------
+
     ; Check if cursor animation needs to be updated
     ld hl, wCursorAnimCooldown
     dec [hl]
@@ -217,8 +225,12 @@ GameplayLoop::
 .reloadOne
     ld a, 1
     ld [wCursorPosAnimAdd], a
-
 .noCursorAnimUpdate
+
+    ; ---------------------------------------------------------
+    ; Check for A button press to place symbol
+    ; ---------------------------------------------------------
+
     ; Check if A button was pressed
     ld hl, hPressedButtons
     bit PADB_A, [hl]

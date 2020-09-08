@@ -5,6 +5,10 @@ SECTION "Win Screen Code", ROM0
 WinLoop::
     ; Make sure that VBlank handler ran first
     rst WaitVBlank
+
+    ; ---------------------------------------------------------
+    ; Check for game to be restarted on START press
+    ; ---------------------------------------------------------
     
     ; Check if Start is pressed
     ld a, [hPressedButtons]
@@ -21,6 +25,10 @@ WinLoop::
     call InitPlayingField
     jp GameplayLoop
 .noRestart
+
+    ; ---------------------------------------------------------
+    ; Update animations for 'PRESS START' Text
+    ; ---------------------------------------------------------
 
     ; Check if animation should be updated
     ld hl, wWinAnimCooldown
@@ -55,6 +63,10 @@ WinLoop::
     ld [hStringLocationAddr+1], a
     ld [hStringDrawFlag], a
 .noUpdateWinAnim
+
+    ; ---------------------------------------------------------
+    ; Update animation for win symbols
+    ; ---------------------------------------------------------
 
     ; Check if draw
     ld a, [wPlayerWin]

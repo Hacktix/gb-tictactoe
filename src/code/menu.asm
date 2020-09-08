@@ -90,6 +90,10 @@ MenuLoop::
     ; Make sure that VBlank handler ran first
     rst WaitVBlank
 
+    ; ---------------------------------------------------------
+    ; Check for UP/DOWN input and change selected option
+    ; ---------------------------------------------------------
+
     ; Check if either up/down was pressed
     ld a, [hPressedButtons]
     and PADF_DOWN | PADF_UP
@@ -121,8 +125,12 @@ MenuLoop::
     ; Play sound
     ld de, MenuMoveBeep
     call PlaySound
-
 .noCursorMove
+
+    ; ---------------------------------------------------------
+    ; Check for game to be started on START press
+    ; ---------------------------------------------------------
+
     ; Check if START was pressed
     ld a, [hPressedButtons]
     and PADF_START
