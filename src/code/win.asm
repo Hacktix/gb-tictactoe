@@ -5,29 +5,66 @@ SECTION "Win Screen Code", ROM0
 WinLoop::
     ; Make sure that VBlank handler ran first
     rst WaitVBlank
+    
+    ; Check if Start is pressed
+    ld a, [hPressedButtons]
+    bit PADB_START, a
+    jr z, .noRestart
 
-    ; Call all win loop functions
-    call CheckRestartGame
-    call UpdateWinAnim
-    call UpdateWinSymbolAnim
+    ; Disable interrupts & LCD
+    di
+    xor a
+    ld [rLCDC], a
 
-    ; Repeat
-    jp WinLoop
+    ; Call setup functions and jump to gameplay loop
+    call ClearOAM
+    call InitPlayingField
+    jp GameplayLoop
+.noRestart
 
-;==============================================================
-; Updates the animation of the symbols that caused a player
-; to win.
-;==============================================================
-UpdateWinSymbolAnim::
+    ; Check if animation should be updated
+    ld hl, wWinAnimCooldown
+    dec [hl]
+    jr nz, .noUpdateWinAnim
+
+    ; Update animation state registers
+    ld [hl], WIN_ANIM_TIMEOUT
+    ld a, [wWinAnimState]
+    inc a
+    ld [wWinAnimState], a
+
+    ; Load string pointer to draw
+    and $01
+    jr nz, .loadTextString
+    ld a, HIGH(strEmptyLine)
+    ld [hStringPointerAddr], a
+    ld a, LOW(strEmptyLine)
+    ld [hStringPointerAddr+1], a
+    jr .endLoadString
+.loadTextString
+    ld a, HIGH(strReset)
+    ld [hStringPointerAddr], a
+    ld a, LOW(strReset)
+    ld [hStringPointerAddr+1], a
+.endLoadString
+
+    ; Request string to be drawn
+    ld a, $9c
+    ld [hStringLocationAddr], a
+    ld a, $60
+    ld [hStringLocationAddr+1], a
+    ld [hStringDrawFlag], a
+.noUpdateWinAnim
+
     ; Check if draw
     ld a, [wPlayerWin]
     and a
-    ret z
+    jr z, .noUpdateSymAnim
 
     ; Check if animation should be updated
     ld hl, wSWinAnimCooldown
     dec [hl]
-    ret nz
+    jr nz, .noUpdateSymAnim
 
     ; Update cooldown
     ld [hl], WIN_SYM_ANIM_TIMEOUT
@@ -104,70 +141,7 @@ UpdateWinSymbolAnim::
     sub [hl]
     ld [hl], a
 .skipSpeedSwapY
+.noUpdateSymAnim
 
-    ret
-
-;==============================================================
-; Checks whether or not Start is pressed and restarts the
-; game if so.
-;==============================================================
-CheckRestartGame::
-    ; Check if Start is pressed
-    ld a, [hPressedButtons]
-    bit PADB_START, a
-    ret z
-
-    ; Wait for VBlank and disable interrupts
-    rst WaitVBlank
-    di
-
-    ; Disable LCD
-    xor a
-    ld [rLCDC], a
-
-    ; Call setup functions
-    call ClearOAM
-    call InitPlayingField
-
-    ; Clear return vectors and jump to gameplay loop
-    pop de
-    jp GameplayLoop
-
-;==============================================================
-; Updates the animation state of the "PRESS START" string
-;==============================================================
-UpdateWinAnim::
-    ; Check if animation should be updated
-    ld hl, wWinAnimCooldown
-    dec [hl]
-    ret nz
-
-    ; Update animation state registers
-    ld [hl], WIN_ANIM_TIMEOUT
-    ld a, [wWinAnimState]
-    inc a
-    ld [wWinAnimState], a
-
-    ; Load string pointer to draw
-    and $01
-    jr nz, .loadTextString
-    ld a, HIGH(strEmptyLine)
-    ld [hStringPointerAddr], a
-    ld a, LOW(strEmptyLine)
-    ld [hStringPointerAddr+1], a
-    jr .endLoadString
-.loadTextString
-    ld a, HIGH(strReset)
-    ld [hStringPointerAddr], a
-    ld a, LOW(strReset)
-    ld [hStringPointerAddr+1], a
-.endLoadString
-
-    ; Request string to be drawn
-    ld a, $9c
-    ld [hStringLocationAddr], a
-    ld a, $60
-    ld [hStringLocationAddr+1], a
-    ld [hStringDrawFlag], a
-
-    ret
+    ; Repeat
+    jp WinLoop
