@@ -2,10 +2,15 @@
 ; WRAM for global and state-specific variables.
 ;==============================================================
 SECTION "WRAM", WRAM0
+; Global Variables
 wCGBFlag: db                  ; 0 if running on CGB, non-zero value otherwise
 
+; Menu Screen Variables
 wSelectedGamemode: db         ; 0=1 Player, 1=2 Player
+wMenuFadeInState: db          ; 0-5 depending on the fade-in state of the main menu
+wMenuFadeInCooldown: db       ; Cooldown in frames until menu fade in is updated
 
+; Gameplay Variables
 StartPlayRAM:
 wPlayerTurn: db               ; 1=X (Player 1), 2=O (Player 2)
 wPlayerWin: db                ; 0=None, 1=X (Player 1), 2=O (Player 2)

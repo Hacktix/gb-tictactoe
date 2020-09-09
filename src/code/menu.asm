@@ -66,11 +66,18 @@ InitMenu::
     ldh [rOCPD], a
     dec b
     jr nz, .objLoop
-
 .noInitCGB
-    ; Initialize menu variables
+
+    ; Initialize DMG palettes for fadein
     xor a
+    ld [rBGP], a
+    ld [rOBP0], a
+
+    ; Initialize menu variables
     ld [wSelectedGamemode], a
+    ld [wMenuFadeInState], a
+    ld a, MENU_FADEIN_TIMEOUT
+    ld [wMenuFadeInCooldown], a
 
     ; Start LCD
     ld a, LCDCF_ON | LCDCF_BG8800 | LCDCF_BG9800 | LCDCF_WINOFF | LCDCF_OBJ8 | LCDCF_OBJON | LCDCF_BGON
@@ -89,6 +96,36 @@ InitMenu::
 MenuLoop::
     ; Make sure that VBlank handler ran first
     rst WaitVBlank
+
+    ; ---------------------------------------------------------
+    ; Update menu fade in animation
+    ; ---------------------------------------------------------
+    
+    ; Check if fade in is already completed
+    ld a, [wMenuFadeInState]
+    cp 4
+    jr z, .skipFadeInAnim
+
+    ; Check if timeout is 0 yet
+    ld hl, wMenuFadeInCooldown
+    dec [hl]
+    jr nz, MenuLoop           ; Disallow input during fade in
+
+    ; Reload timeout
+    ld a, MENU_FADEIN_TIMEOUT
+    ld [hl], a
+
+    ; Update BGP
+    ld hl, wMenuFadeInState
+    ld a, [rBGP]
+    or [hl]
+    rrca 
+    rrca 
+    ld [rBGP], a
+    ld [rOBP0], a
+    inc [hl]
+    jr MenuLoop
+.skipFadeInAnim
 
     ; ---------------------------------------------------------
     ; Check for UP/DOWN input and change selected option
