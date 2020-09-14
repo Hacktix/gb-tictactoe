@@ -44,12 +44,11 @@ InitMenu::
     ; Setup BGP palette writing
     ld a, $80
     ldh [rBCPS], a
-    ld hl, cMenuBGP0
+    ld a, $ff
     ld b, 8
 
     ; Write color values
 .bgp0Loop
-    ld a, [hli]
     ldh [rBCPD], a
     dec b
     jr nz, .bgp0Loop
@@ -57,12 +56,11 @@ InitMenu::
     ; Setup OBJ palette writing
     ld a, $80
     ldh [rOCPS], a
-    ld hl, cGameplayOBJ2
+    ld a, $ff
     ld b, EndGameplayObjectPalettes - cGameplayOBJ0
 
     ; Write color values
 .objLoop
-    ld a, [hli]
     ldh [rOCPD], a
     dec b
     jr nz, .objLoop
@@ -79,8 +77,17 @@ InitMenu::
     ld a, MENU_FADEIN_TIMEOUT
     ld [wMenuFadeInCooldown], a
 
-    ; Start LCD
-    ld a, LCDCF_ON | LCDCF_BG8800 | LCDCF_BG9800 | LCDCF_WINOFF | LCDCF_OBJ8 | LCDCF_OBJON | LCDCF_BGON
+    ; Set A to LCDC with sprites on/off depending on whether or not running on CGB
+    ld a, LCDCF_ON | LCDCF_BG8800 | LCDCF_BG9800 | LCDCF_WINOFF | LCDCF_OBJ8 | LCDCF_OBJOFF | LCDCF_BGON
+    ld b, a
+    ld a, [wCGBFlag]
+    and a
+    ld a, b
+    jr z, .endLoadLCDC
+    or LCDCF_OBJON
+.endLoadLCDC
+
+    ; Enable LCD
     ld [rLCDC], a
 
     ; Enable Interrupts
@@ -184,3 +191,11 @@ MenuLoop::
     ; Initialize main gameplay loop
     call InitPlayingField
     jp GameplayLoop
+
+;==============================================================
+; Updates palette registers for a fade-in animation on the
+; CGB. Writes non-zero value to wMenuFadeInFinishCGB once all
+; animations are done playing.
+;==============================================================
+UpdateMenuFadeInCGB::
+    ; TODO: Implement CGB Fade into menu loop
