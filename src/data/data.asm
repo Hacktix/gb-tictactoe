@@ -82,14 +82,15 @@ cMenuBGP0:
 ; Menu Fade-In Parameters
 ;
 ; FORMAT:
-;  2 bytes subtraction value (Little Endian)
 ;  1 byte subtraction count (amount of times to subtract to get desired value)
+;  2 bytes subtraction value (Little Endian)
 ;  Starting color $7FFF is assumed
 cFadeInParamBGP0:
-    db $cf, $08, 5
-    db $5d, $0b, 11
-    db $bb, $09, 13
-    db $bb, $09, 13
+    ; TODO: Fix this shiz
+    db 5, $cf, $08
+    db 11, $5d, $0b
+    db 13, $bb, $09
+    db 13, $bb, $09
 
 ;==============================================================
 ; Section containing sound register values for SFX.

@@ -9,6 +9,8 @@ wCGBFlag: db                  ; 0 if running on CGB, non-zero value otherwise
 wSelectedGamemode: db         ; 0=1 Player, 1=2 Player
 wMenuFadeInState: db          ; 0-5 depending on the fade-in state of the main menu
 wMenuFadeInCooldown: db       ; Cooldown in frames until menu fade in is updated
+wMenuFadeInFinishCGB: db      ; State of fade in animation for CGB
+wMenuFadeInDataCGB: ds 12     ; Ref. 'cFadeInParamBGP0' in data.asm, stores current state
 
 ; Gameplay Variables
 StartPlayRAM:

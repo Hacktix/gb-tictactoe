@@ -44,24 +44,32 @@ InitMenu::
     ; Setup BGP palette writing
     ld a, $80
     ldh [rBCPS], a
-    ld a, $ff
-    ld b, 8
+    ld hl, wMenuFadeInDataCGB
+    ld b, 4
 
     ; Write color values
 .bgp0Loop
+    xor a
+    ld [hli], a
+    ld a, $ff
     ldh [rBCPD], a
+    ld [hli], a
+    ld a, $7f
+    ldh [rBCPD], a
+    ld [hli], a
     dec b
     jr nz, .bgp0Loop
 
     ; Setup OBJ palette writing
     ld a, $80
     ldh [rOCPS], a
-    ld a, $ff
-    ld b, EndGameplayObjectPalettes - cGameplayOBJ0
+    ld hl, cGameplayOBJ2
+    ld b, EndGameplayObjectPalettes - cGameplayOBJ2
 
     ; Write color values
 .objLoop
-    ldh [rOCPD], a
+    ld a, [hli]
+    ld [rOCPD], a
     dec b
     jr nz, .objLoop
 .noInitCGB
@@ -74,6 +82,7 @@ InitMenu::
     ; Initialize menu variables
     ld [wSelectedGamemode], a
     ld [wMenuFadeInState], a
+    ld [wMenuFadeInFinishCGB], a
     ld a, MENU_FADEIN_TIMEOUT
     ld [wMenuFadeInCooldown], a
 
@@ -107,7 +116,31 @@ MenuLoop::
     ; ---------------------------------------------------------
     ; Update menu fade in animation
     ; ---------------------------------------------------------
-    
+
+    ; Check if running on CGB
+    ld a, [wCGBFlag]
+    and a
+    jr nz, .fadeInDMG
+
+    ; Check if fade in is completed (CGB)
+    ld a, [wMenuFadeInFinishCGB]
+    and a
+    jr nz, .skipFadeInAnim
+
+    ; Check if timeout is 0 yet
+    ld hl, wMenuFadeInCooldown
+    dec [hl]
+    jr nz, MenuLoop           ; Disallow input during fade in
+
+    ; Reset Cooldown
+    ld a, MENU_FADEIN_TIMEOUT
+    ld [hl], a
+
+    ; Call Update Function
+    call UpdateMenuFadeInCGB
+    jr MenuLoop
+
+.fadeInDMG    
     ; Check if fade in is already completed
     ld a, [wMenuFadeInState]
     cp 4
@@ -198,4 +231,79 @@ MenuLoop::
 ; animations are done playing.
 ;==============================================================
 UpdateMenuFadeInCGB::
-    ; TODO: Implement CGB Fade into menu loop
+    ; Set up RAM access
+    ld hl, cFadeInParamBGP0
+    ld de, wMenuFadeInDataCGB
+    ld c, $04
+
+.updateColorLoop
+    ; Check if sub count has reached target
+    ld a, [de]
+    cp [hl]
+    jr z, .skipUpdate
+    ; Update sub count in RAM
+    ld a, [de]
+    inc a
+    ld [de], a
+    inc hl
+    inc de
+    ; Update Color Values
+    ld a, [de]
+    sub [hl]
+    ld [de], a
+    push af         ; Preserve Flags
+    inc de
+    inc hl
+    pop af
+    ld a, [de]
+    sbc [hl]
+    ld [de], a
+    inc de
+    inc hl
+    ; Increment fade in state (none updated - zero)
+    ld a, [wMenuFadeInFinishCGB]
+    inc a
+    ld [wMenuFadeInFinishCGB], a
+    jr .endUpdateLoop
+.skipUpdate
+    inc hl
+    inc hl
+    inc hl
+    inc de
+    inc de
+    inc de
+.endUpdateLoop
+    dec c
+    jr nz, .updateColorLoop
+
+    ; Adjust fade in state value if needed
+    ld a, [wMenuFadeInFinishCGB]
+    and a
+    jr z, .skipReset
+    xor a
+    jr .endStateReset
+.skipReset
+    ld a, [rLCDC]
+    or LCDCF_OBJON
+    ldh [rLCDC], a
+    ld a, $ff
+.endStateReset
+    ld [wMenuFadeInFinishCGB], a
+
+    ; Set up palette writing
+    ld a, $80
+    ldh [rBCPS], a
+    ld b, 4
+    ld hl, wMenuFadeInDataCGB
+
+    ; Update colors
+.writeColorLoop
+    inc hl
+    ld a, [hli]
+    ld [rBCPD], a
+    ld a, [hli]
+    ld [rBCPD], a
+    dec b
+    jr nz, .writeColorLoop
+
+    ret
