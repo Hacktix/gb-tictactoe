@@ -11,6 +11,7 @@ INCLUDE "src/data/interrupts.asm"
 ; Game Code
 INCLUDE "src/code/functions.asm"
 INCLUDE "src/code/init.asm"
+INCLUDE "src/code/ai.asm"
 INCLUDE "src/code/gameplay.asm"
 INCLUDE "src/code/win.asm"
 INCLUDE "src/code/menu.asm"

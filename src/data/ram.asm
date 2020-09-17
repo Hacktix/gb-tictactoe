@@ -14,6 +14,9 @@ wMenuFadeInDataCGB: ds 12     ; Ref. 'cFadeInParamBGP0' in data.asm, stores curr
 
 ; Gameplay Variables
 StartPlayRAM:
+wAITurnFlag: db               ; 0 if players turn, otherwise AI
+wAITurnCooldown: db           ; Amount of frames to wait before showing AI turn
+wCursorPosAI: db              ; 0-8 Starting top left, going right (AI Decision)
 wPlayerTurn: db               ; 1=X (Player 1), 2=O (Player 2)
 wPlayerWin: db                ; 0=None, 1=X (Player 1), 2=O (Player 2)
 wCursorAnimCooldown: db       ; Cooldown in frames until cursor animates

@@ -114,6 +114,40 @@ GameplayLoop::
     rst WaitVBlank
 
     ; ---------------------------------------------------------
+    ; Check if singleplayer and handle AI if so
+    ; ---------------------------------------------------------
+
+    ; Check if singleplayer
+    ld a, [wSelectedGamemode]
+    and a
+    jr nz, .skipAI
+
+    ; Check if AI cooldown is zero (Player's turn)
+    ld hl, wAITurnCooldown
+    ld a, [hl]
+    and a
+    jr z, .skipAI
+
+    ; Decrement cooldown and skip user input if not done
+    dec [hl]
+    jp nz, .noPressA
+
+    ; Place AI symbol after preserving cursor position
+    ld a, [wCursorPos]
+    push af
+    ld a, [wCursorPosAI]
+    ld [wCursorPos], a
+    call PlaceSymbol
+    ld b, a
+    pop af
+    ld [wCursorPos], a
+    ld a, b
+    and a
+    jp z, WinLoop
+
+.skipAI
+
+    ; ---------------------------------------------------------
     ; Check DPad input and move cursor accordingly
     ; ---------------------------------------------------------
 
@@ -200,6 +234,21 @@ GameplayLoop::
 .noCursorMove
 
     ; ---------------------------------------------------------
+    ; Check for A button press to place symbol
+    ; ---------------------------------------------------------
+
+    ; Check if A button was pressed
+    ld hl, hPressedButtons
+    bit PADB_A, [hl]
+    jr z, .noPressA
+
+    ; Place symbol and check for win
+    call PlaceSymbol
+    and a
+    jp z, WinLoop
+.noPressA
+
+    ; ---------------------------------------------------------
     ; Update cursor animation
     ; ---------------------------------------------------------
 
@@ -226,21 +275,6 @@ GameplayLoop::
     ld a, 1
     ld [wCursorPosAnimAdd], a
 .noCursorAnimUpdate
-
-    ; ---------------------------------------------------------
-    ; Check for A button press to place symbol
-    ; ---------------------------------------------------------
-
-    ; Check if A button was pressed
-    ld hl, hPressedButtons
-    bit PADB_A, [hl]
-    jr z, .noPressA
-
-    ; Place symbol and check for win
-    call PlaceSymbol
-    and a
-    jp z, WinLoop
-.noPressA
 
     ; Repeat
     jp GameplayLoop
@@ -350,6 +384,28 @@ PlaceSymbol::
     ld de, SymbolPlaceBeep
     call PlaySound
 
+    ; Check if singleplayer
+    ld a, [wSelectedGamemode]
+    and a
+    jp nz, CheckForWin
+
+    ; Check if move was made by AI
+    ld a, [wAITurnFlag]
+    and a
+    jr nz, .resetAI
+
+    ; Load AI Turn Timeout and calculate move
+    ld a, AI_TURN_TIMEOUT
+    ld [wAITurnCooldown], a
+    ld [wAITurnFlag], a
+    call CalculateTurnAI
+
+    jp CheckForWin
+
+.resetAI
+    ; Reset AI Move Flag
+    xor a
+    ld [wAITurnFlag], a
     jp CheckForWin
 
 ;==============================================================
