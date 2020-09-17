@@ -371,11 +371,6 @@ PlaceSymbol::
     ld [hStringLocationAddr+1], a
     ld [hStringDrawFlag], a
 
-    ; Increment amount of placed symbols
-    ld a, [wPlacedSymbols]
-    inc a
-    ld [wPlacedSymbols], a
-
     ; Request OAM DMA
     ld a, HIGH(wShadowOAM)
     ldh [hStartAddrOAM], a
@@ -383,6 +378,13 @@ PlaceSymbol::
     ; Play sound
     ld de, SymbolPlaceBeep
     call PlaySound
+
+    ; Increment amount of placed symbols
+    ld a, [wPlacedSymbols]
+    inc a
+    ld [wPlacedSymbols], a
+    cp 9
+    jp z, CheckForWin
 
     ; Check if singleplayer
     ld a, [wSelectedGamemode]
