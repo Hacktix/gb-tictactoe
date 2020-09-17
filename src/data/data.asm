@@ -87,10 +87,10 @@ cMenuBGP0:
 ;  Starting color $7FFF is assumed
 cFadeInParamBGP0:
     ; TODO: Fix this shiz
-    db 5, $cf, $08
-    db 11, $5d, $0b
-    db 13, $bb, $09
-    db 13, $bb, $09
+    db $6, $22, $08
+    db $8, $22, $08
+    db $b, $22, $08
+    db $f, $22, $08
 
 ;==============================================================
 ; Section containing sound register values for SFX.
