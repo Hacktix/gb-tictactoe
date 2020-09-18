@@ -57,6 +57,71 @@ CalculateTurnAI::
     jr nz, .rowLoop
 
     ; ---------------------------------------------------------
+    ; Check columns for possible wins
+    ; ---------------------------------------------------------
+    
+    ; Set registers for checks
+    ld e, 3
+
+.colLoop
+    ld hl, wFieldMap-1
+    ld a, 4
+    sub e
+.colInitOffsetLoop
+    inc hl
+    dec a
+    jr nz, .colInitOffsetLoop
+    ld bc, $0000       ; B = Empty Count, C = Occupied Count
+    ld d, 3
+.colScanLoop
+    ld a, [hli]
+    inc hl
+    inc hl
+    cp 1               ; Set Z if occupied by player, set C if empty
+    jr nz, .colSquareNotOccupied
+    inc c
+    jr .colSquareNotEmpty
+.colSquareNotOccupied
+    jr nc, .colSquareNotEmpty
+    inc b
+.colSquareNotEmpty
+    dec d
+    jr nz, .colScanLoop
+    ; Check if win on currently scanned row
+    ld a, c
+    and a
+    jr nz, .noWinCol
+    ld a, b
+    cp 1
+    jr nz, .noWinCol
+    ; Possible win on current row
+    dec hl
+    dec hl
+    dec hl
+    ld b, 9
+.colFindWinSquareLoop
+    ld a, b
+    sub 3
+    ld b, a
+    ld a, [hld]
+    dec hl
+    dec hl
+    and a
+    jr nz, .colFindWinSquareLoop
+    ld c, b     ; Preserve offset on row
+    ld a, 3
+.colWinOffsetCalcLoop
+    dec a
+    dec e
+    jr nz, .colWinOffsetCalcLoop
+    add c
+    ld [wCursorPosAI], a
+    ret
+.noWinCol
+    dec e
+    jr nz, .colLoop
+
+    ; ---------------------------------------------------------
     ; Select random square (last resort)
     ; ---------------------------------------------------------
 
