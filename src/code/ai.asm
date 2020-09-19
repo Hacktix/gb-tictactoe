@@ -152,7 +152,7 @@ CalculateTurnAI::
     jr nz, .colLoop
 
     ; ---------------------------------------------------------
-    ; Check left-to-right diagonal for possible win
+    ; Check left-to-right diagonal for win- and block-moves
     ; ---------------------------------------------------------
     
     ; Set registers for checks
@@ -179,8 +179,9 @@ CalculateTurnAI::
     
     ; Check if win on diagonal
     ld a, c
-    and a
-    jr nz, .noWinLtrDiagonal
+    cp 1
+    jr z, .noWinLtrDiagonal
+    ld [wAITurnBlockFlag], a
     ld a, b
     cp 1
     jr nz, .noWinLtrDiagonal
@@ -200,13 +201,19 @@ CalculateTurnAI::
     dec hl
     and a
     jr nz, .ltrDiagonalFindWinSquareLoop
+    ld a, [wAITurnBlockFlag]
+    and a
     ld a, b
+    jr z, .ltrDiagonalLoadWinMove
+    ld [wAITurnBlockBuffer], a
+    jr .noWinLtrDiagonal
+.ltrDiagonalLoadWinMove
     ld [wCursorPosAI], a
     ret
 .noWinLtrDiagonal
 
     ; ---------------------------------------------------------
-    ; Check right-to-left diagonal for possible win
+    ; Check right-to-left diagonal for win- and block-moves
     ; ---------------------------------------------------------
     
     ; Set registers for checks
@@ -231,8 +238,9 @@ CalculateTurnAI::
     
     ; Check if win on diagonal
     ld a, c
-    and a
-    jr nz, .noWinRtlDiagonal
+    cp 1
+    jr z, .noWinRtlDiagonal
+    ld [wAITurnBlockFlag], a
     ld a, b
     cp 1
     jr nz, .noWinRtlDiagonal
@@ -248,7 +256,13 @@ CalculateTurnAI::
     dec hl
     and a
     jr nz, .rtlDiagonalFindWinSquareLoop
+    ld a, [wAITurnBlockFlag]
+    and a
     ld a, b
+    jr z, .rtlDiagonalLoadWinMove
+    ld [wAITurnBlockBuffer], a
+    jr .noWinRtlDiagonal
+.rtlDiagonalLoadWinMove
     ld [wCursorPosAI], a
     ret
 .noWinRtlDiagonal
