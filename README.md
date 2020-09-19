@@ -4,7 +4,9 @@
 
 A small starter project as a first proper Gameboy game written 100% in assembly, released in 2020.
 
-The game currently only supports an "alternating" 2 player mode, meaning that two players take turns on the same console. Support for a singleplayer mode against an AI as well as a Link-Cable-based multiplayer mode are planned.
+Currently the game supports two game modes: an "alternating" 2 player mode, meaning that two players take turns on the same console, as well as a singleplayer mode against an AI.
+
+Support for a Link-Cable-based multiplayer mode is planned.
 
 The game fully supports Gameboy Color features, but also runs perfectly fine on a non-color Gameboy version.
 
