@@ -9,7 +9,7 @@ CalculateTurnAI::
     ld [wAITurnBlockBuffer], a
 
     ; ---------------------------------------------------------
-    ; Check rows for possible wins
+    ; Check rows for win- and block-moves
     ; ---------------------------------------------------------
     
     ; Set registers for checks
@@ -74,7 +74,7 @@ CalculateTurnAI::
     jr nz, .rowLoop
 
     ; ---------------------------------------------------------
-    ; Check columns for possible wins
+    ; Check columns for win- and block-moves
     ; ---------------------------------------------------------
     
     ; Set registers for checks
@@ -104,14 +104,16 @@ CalculateTurnAI::
 .colSquareNotEmpty
     dec d
     jr nz, .colScanLoop
-    ; Check if win on currently scanned row
+    ; Check if win on currently scanned column
     ld a, c
-    and a
-    jr nz, .noWinCol
+    cp 1
+    jr z, .noWinCol
+    ld [wAITurnBlockFlag], a
     ld a, b
     cp 1
     jr nz, .noWinCol
-    ; Possible win on current row
+    ; Possible win on current column
+    push hl
     dec hl
     dec hl
     dec hl
@@ -127,11 +129,22 @@ CalculateTurnAI::
     jr nz, .colFindWinSquareLoop
     ld c, b     ; Preserve offset on row
     ld a, 3
+    push de
 .colWinOffsetCalcLoop
     dec a
     dec e
     jr nz, .colWinOffsetCalcLoop
+    pop de
+    pop hl
     add c
+    ld b, a
+    ld a, [wAITurnBlockFlag]
+    and a
+    ld a, b
+    jr z, .colLoadWinMove
+    ld [wAITurnBlockBuffer], a
+    jr .noWinCol
+.colLoadWinMove
     ld [wCursorPosAI], a
     ret
 .noWinCol
