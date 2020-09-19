@@ -16,6 +16,8 @@ wMenuFadeInDataCGB: ds 12     ; Ref. 'cFadeInParamBGP0' in data.asm, stores curr
 StartPlayRAM:
 wAITurnFlag: db               ; 0 if players turn, otherwise AI
 wAITurnCooldown: db           ; Amount of frames to wait before showing AI turn
+wAITurnBlockBuffer: db        ; 0-8 square index (AI turn to block player if it can't win)
+wAITurnBlockFlag: db          ; Whether or not the calculation should set the turn block buffer
 wCursorPosAI: db              ; 0-8 Starting top left, going right (AI Decision)
 wPlayerTurn: db               ; 1=X (Player 1), 2=O (Player 2)
 wPlayerWin: db                ; 0=None, 1=X (Player 1), 2=O (Player 2)

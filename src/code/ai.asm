@@ -4,6 +4,9 @@ SECTION "Singleplayer AI", ROM0
 ; its symbol.
 ;==============================================================
 CalculateTurnAI::
+    ; Initialize Block-turn buffer
+    ld a, $ff
+    ld [wAITurnBlockBuffer], a
 
     ; ---------------------------------------------------------
     ; Check rows for possible wins
@@ -30,12 +33,15 @@ CalculateTurnAI::
     jr nz, .rowScanLoop
     ; Check if win on currently scanned row
     ld a, c
-    and a
-    jr nz, .noWinRow
+    cp 1
+    jr z, .noWinRow
+    ld [wAITurnBlockFlag], a
+.noBlockRow
     ld a, b
     cp 1
     jr nz, .noWinRow
     ; Possible win on current row
+    push hl
     dec hl
     ld b, 3
 .rowFindWinSquareLoop
@@ -45,11 +51,22 @@ CalculateTurnAI::
     jr nz, .rowFindWinSquareLoop
     ld c, b     ; Preserve offset on row
     ld a, 9
+    push de
 .rowWinOffsetCalcLoop
     sub 3
     dec e
     jr nz, .rowWinOffsetCalcLoop
+    pop de
+    pop hl
     add c
+    ld b, a
+    ld a, [wAITurnBlockFlag]
+    and a
+    ld a, b
+    jr z, .rowLoadWinMove
+    ld [wAITurnBlockBuffer], a
+    jr .noWinRow
+.rowLoadWinMove
     ld [wCursorPosAI], a
     ret
 .noWinRow
@@ -222,6 +239,17 @@ CalculateTurnAI::
     ld [wCursorPosAI], a
     ret
 .noWinRtlDiagonal
+
+    ; ---------------------------------------------------------
+    ; Check for blocking move
+    ; ---------------------------------------------------------
+    ld a, [wAITurnBlockBuffer]
+    inc a
+    jr z, .noBlockMove
+    dec a
+    ld [wCursorPosAI], a
+    ret
+.noBlockMove
 
     ; ---------------------------------------------------------
     ; Select random square (last resort)
