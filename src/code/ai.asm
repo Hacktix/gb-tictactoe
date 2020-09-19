@@ -122,6 +122,108 @@ CalculateTurnAI::
     jr nz, .colLoop
 
     ; ---------------------------------------------------------
+    ; Check left-to-right diagonal for possible win
+    ; ---------------------------------------------------------
+    
+    ; Set registers for checks
+    ld hl, wFieldMap
+    ld e, 3
+    ld bc, $0000       ; B = Empty Count, C = Occupied Count
+
+    ; Check fields
+.ltrDiagonalLoop
+    ld a, [hli]
+    inc hl
+    inc hl
+    inc hl
+    cp 1               ; Set Z if occupied by player, set C if empty
+    jr nz, .ltrDiagonalSquareNotOccupied
+    inc c
+    jr .ltrDiagonalSquareNotEmpty
+.ltrDiagonalSquareNotOccupied
+    jr nc, .ltrDiagonalSquareNotEmpty
+    inc b
+.ltrDiagonalSquareNotEmpty
+    dec e
+    jr nz, .ltrDiagonalLoop
+    
+    ; Check if win on diagonal
+    ld a, c
+    and a
+    jr nz, .noWinLtrDiagonal
+    ld a, b
+    cp 1
+    jr nz, .noWinLtrDiagonal
+    ; Possible win on diagonal
+    dec hl
+    dec hl
+    dec hl
+    dec hl
+    ld b, 12
+.ltrDiagonalFindWinSquareLoop
+    ld a, b
+    sub 4
+    ld b, a
+    ld a, [hld]
+    dec hl
+    dec hl
+    dec hl
+    and a
+    jr nz, .ltrDiagonalFindWinSquareLoop
+    ld a, b
+    ld [wCursorPosAI], a
+    ret
+.noWinLtrDiagonal
+
+    ; ---------------------------------------------------------
+    ; Check right-to-left diagonal for possible win
+    ; ---------------------------------------------------------
+    
+    ; Set registers for checks
+    ld hl, wFieldMap+2
+    ld e, 3
+    ld bc, $0000       ; B = Empty Count, C = Occupied Count
+
+    ; Check fields
+.rtlDiagonalLoop
+    ld a, [hli]
+    inc hl
+    cp 1               ; Set Z if occupied by player, set C if empty
+    jr nz, .rtlDiagonalSquareNotOccupied
+    inc c
+    jr .rtlDiagonalSquareNotEmpty
+.rtlDiagonalSquareNotOccupied
+    jr nc, .rtlDiagonalSquareNotEmpty
+    inc b
+.rtlDiagonalSquareNotEmpty
+    dec e
+    jr nz, .rtlDiagonalLoop
+    
+    ; Check if win on diagonal
+    ld a, c
+    and a
+    jr nz, .noWinRtlDiagonal
+    ld a, b
+    cp 1
+    jr nz, .noWinRtlDiagonal
+    ; Possible win on diagonal
+    dec hl
+    dec hl
+    ld b, 8
+.rtlDiagonalFindWinSquareLoop
+    ld a, b
+    sub 2
+    ld b, a
+    ld a, [hld]
+    dec hl
+    and a
+    jr nz, .rtlDiagonalFindWinSquareLoop
+    ld a, b
+    ld [wCursorPosAI], a
+    ret
+.noWinRtlDiagonal
+
+    ; ---------------------------------------------------------
     ; Select random square (last resort)
     ; ---------------------------------------------------------
 
